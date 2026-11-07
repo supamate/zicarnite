@@ -679,7 +679,7 @@ if oreNodes then
 			end
 			task.wait(0.25)
 		until os.clock() > deadline
-		if not serverName or serverName == "" or serverName == "???" then
+		if not serverName or serverName == "" then
 			pcall(function()
 				local last = HttpService:JSONDecode(readfile(LAST_SERVER_FILE))
 				if type(last.Name) == "string" and last.Name ~= "" and os.time() - (tonumber(last.Time) or 0) < 300 then
