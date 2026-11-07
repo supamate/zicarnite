@@ -697,8 +697,9 @@ if oreNodes then
 			if not serverName or serverName == "" then
 				serverName = labelFound and "Unknown (label empty)" or "Unknown (label not found)"
 			end
-			table.insert(lines, "**" .. serverName .. "**")
+			table.insert(lines, "SERVER NAME: **" .. serverName .. "**")
 		end
+		table.insert(lines, "━━━━━━━━━━━━━━━━━━━━")
 		for _, name in ipairs(order) do
 			table.insert(lines, name .. " x" .. counts[name])
 		end
