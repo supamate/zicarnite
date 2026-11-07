@@ -442,7 +442,7 @@ local function hubHop(pickServer, serverFolders)
 
 	while not state.Found and not state.Paused do
 		local visited = loadVisited()
-		local pool, names = {}, {}
+		local pool, names, regions = {}, {}, {}
 		for _, region in ipairs(serverFolders:GetChildren()) do
 			for _, server in ipairs(region:GetChildren()) do
 				local numPlayers = server:FindFirstChild("NumPlayers")
@@ -451,6 +451,8 @@ local function hubHop(pickServer, serverFolders)
 					table.insert(pool, server.Name)
 					local serverName = server:FindFirstChild("ServerName")
 					names[server.Name] = serverName and tostring(serverName.Value) or nil
+					local serverRegion = server:FindFirstChild("Region")
+					regions[server.Name] = serverRegion and tostring(serverRegion.Value) or region.Name
 				end
 			end
 		end
@@ -460,7 +462,7 @@ local function hubHop(pickServer, serverFolders)
 			visited.Servers[id] = os.time()
 		end
 		pcall(function()
-			writefile(LAST_SERVER_FILE, HttpService:JSONEncode({ Id = id, Name = id and names[id] or nil, Time = os.time() }))
+			writefile(LAST_SERVER_FILE, HttpService:JSONEncode({ Id = id, Name = id and names[id] or nil, Region = id and regions[id] or nil, Time = os.time() }))
 		end)
 		visited.Hops = visited.Hops + 1
 		saveVisited(visited)
@@ -670,7 +672,7 @@ if oreNodes then
 		table.sort(order)
 		local lines = { "Joined server: `" .. game.JobId .. "`" }
 		if SHOW_SERVER_NAME then
-			local serverName, labelFound
+			local serverName, labelFound, regionName
 			local deadline = os.clock() + 6
 			repeat
 				local playerGui = localPlayer:FindFirstChild("PlayerGui")
@@ -680,24 +682,36 @@ if oreNodes then
 					pcall(function()
 						serverName = label.ContentText ~= "" and label.ContentText or label.Text
 					end)
+					pcall(function()
+						for _, other in ipairs(label.Parent:GetDescendants()) do
+							if other:IsA("TextLabel") and string.find(string.lower(other.Name), "region", 1, true) and other.ContentText ~= "" then
+								regionName = other.ContentText
+								break
+							end
+						end
+					end)
 				end
 				if serverName and serverName ~= "" then
 					break
 				end
 				task.wait(0.25)
 			until os.clock() > deadline
-			if not serverName or serverName == "" then
-				pcall(function()
-					local last = HttpService:JSONDecode(readfile(LAST_SERVER_FILE))
-					if type(last.Name) == "string" and last.Name ~= "" and os.time() - (tonumber(last.Time) or 0) < 300 then
+			pcall(function()
+				local last = HttpService:JSONDecode(readfile(LAST_SERVER_FILE))
+				if os.time() - (tonumber(last.Time) or 0) < 300 then
+					if (not serverName or serverName == "") and type(last.Name) == "string" and last.Name ~= "" then
 						serverName = last.Name
 					end
-				end)
-			end
+					if not regionName and type(last.Region) == "string" and last.Region ~= "" then
+						regionName = last.Region
+					end
+				end
+			end)
 			if not serverName or serverName == "" then
 				serverName = labelFound and "Unknown (label empty)" or "Unknown (label not found)"
 			end
 			table.insert(lines, "SERVER NAME: **" .. serverName .. "**")
+			table.insert(lines, "REGION: **" .. (regionName or "Unknown") .. "**")
 		end
 		table.insert(lines, "━━━━━━━━━━━━━━━━━━━━")
 		for _, name in ipairs(order) do
