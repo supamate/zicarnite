@@ -15,6 +15,7 @@ local ALARM_LAYERS = 4
 local PAUSE_KEY = Enum.KeyCode.RightControl
 local VISITED_FILE = "zic-hunter-visited.json"
 local LOG_FILE = "zic-hunter-finds.txt"
+local LAST_SERVER_FILE = "zic-hunter-last-server.json"
 
 local globalEnvironment = (getgenv and getgenv()) or _G
 local Players = game:GetService("Players")
@@ -440,13 +441,15 @@ local function hubHop(pickServer, serverFolders)
 
 	while not state.Found and not state.Paused do
 		local visited = loadVisited()
-		local pool = {}
+		local pool, names = {}, {}
 		for _, region in ipairs(serverFolders:GetChildren()) do
 			for _, server in ipairs(region:GetChildren()) do
 				local numPlayers = server:FindFirstChild("NumPlayers")
 				local maxPlayers = server:FindFirstChild("MaxPlayers")
 				if numPlayers and maxPlayers and not visited.Servers[server.Name] and numPlayers.Value >= 1 and maxPlayers.Value - numPlayers.Value >= MIN_FREE_SLOTS then
 					table.insert(pool, server.Name)
+					local serverName = server:FindFirstChild("ServerName")
+					names[server.Name] = serverName and tostring(serverName.Value) or nil
 				end
 			end
 		end
@@ -455,6 +458,9 @@ local function hubHop(pickServer, serverFolders)
 		if id then
 			visited.Servers[id] = os.time()
 		end
+		pcall(function()
+			writefile(LAST_SERVER_FILE, HttpService:JSONEncode({ Id = id, Name = id and names[id] or nil, Time = os.time() }))
+		end)
 		visited.Hops = visited.Hops + 1
 		saveVisited(visited)
 		notify("Zicarnite Hunter", "Joining server #" .. visited.Hops .. " (" .. #pool .. " unvisited)", 3)
@@ -661,7 +667,27 @@ if oreNodes then
 			counts[node.Name] = counts[node.Name] + 1
 		end
 		table.sort(order)
-		local lines = { "Joined server: `" .. game.JobId .. "`" }
+		local serverName
+		local deadline = os.clock() + 3
+		repeat
+			pcall(function()
+				local label = localPlayer.PlayerGui.ServerInfoGui.Container.ServerAame
+				serverName = label.ContentText ~= "" and label.ContentText or label.Text
+			end)
+			if serverName and serverName ~= "" then
+				break
+			end
+			task.wait(0.25)
+		until os.clock() > deadline
+		if not serverName or serverName == "" or serverName == "???" then
+			pcall(function()
+				local last = HttpService:JSONDecode(readfile(LAST_SERVER_FILE))
+				if type(last.Name) == "string" and last.Name ~= "" and os.time() - (tonumber(last.Time) or 0) < 300 then
+					serverName = last.Name
+				end
+			end)
+		end
+		local lines = { "Joined server: `" .. game.JobId .. "`", "**" .. ((serverName and serverName ~= "") and serverName or "Unknown") .. "**" }
 		for _, name in ipairs(order) do
 			table.insert(lines, name .. " x" .. counts[name])
 		end
