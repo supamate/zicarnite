@@ -1,6 +1,7 @@
 local WEBHOOK_URL = ""
 local DISCORD_USER_ID = "333656037347557377"
 local ZIC_PINGS = 10
+local SHOW_SERVER_NAME = true
 local KEYWORDS = { "ZICARNITE", "ZIC" }
 local SCAN_TIME = 10
 local TELEPORT_WAIT = 8
@@ -667,27 +668,37 @@ if oreNodes then
 			counts[node.Name] = counts[node.Name] + 1
 		end
 		table.sort(order)
-		local serverName
-		local deadline = os.clock() + 3
-		repeat
-			pcall(function()
-				local label = localPlayer.PlayerGui.ServerInfoGui.Container.ServerAame
-				serverName = label.ContentText ~= "" and label.ContentText or label.Text
-			end)
-			if serverName and serverName ~= "" then
-				break
-			end
-			task.wait(0.25)
-		until os.clock() > deadline
-		if not serverName or serverName == "" then
-			pcall(function()
-				local last = HttpService:JSONDecode(readfile(LAST_SERVER_FILE))
-				if type(last.Name) == "string" and last.Name ~= "" and os.time() - (tonumber(last.Time) or 0) < 300 then
-					serverName = last.Name
+		local lines = { "Joined server: `" .. game.JobId .. "`" }
+		if SHOW_SERVER_NAME then
+			local serverName, labelFound
+			local deadline = os.clock() + 6
+			repeat
+				local playerGui = localPlayer:FindFirstChild("PlayerGui")
+				local label = playerGui and playerGui:FindFirstChild("ServerAame", true)
+				if label then
+					labelFound = true
+					pcall(function()
+						serverName = label.ContentText ~= "" and label.ContentText or label.Text
+					end)
 				end
-			end)
+				if serverName and serverName ~= "" then
+					break
+				end
+				task.wait(0.25)
+			until os.clock() > deadline
+			if not serverName or serverName == "" then
+				pcall(function()
+					local last = HttpService:JSONDecode(readfile(LAST_SERVER_FILE))
+					if type(last.Name) == "string" and last.Name ~= "" and os.time() - (tonumber(last.Time) or 0) < 300 then
+						serverName = last.Name
+					end
+				end)
+			end
+			if not serverName or serverName == "" then
+				serverName = labelFound and "Unknown (label empty)" or "Unknown (label not found)"
+			end
+			table.insert(lines, "**" .. serverName .. "**")
 		end
-		local lines = { "Joined server: `" .. game.JobId .. "`", "**" .. ((serverName and serverName ~= "") and serverName or "Unknown") .. "**" }
 		for _, name in ipairs(order) do
 			table.insert(lines, name .. " x" .. counts[name])
 		end
