@@ -2,7 +2,7 @@ local WEBHOOK_URL = ""
 local DISCORD_USER_ID = "333656037347557377"
 local ZIC_PINGS = 10
 local SHOW_SERVER_NAME = true
-local KEYWORDS = { "ZICARNITE", "ZIC" }
+local KEYWORDS = { "ZICARDITE", "ZIC" }
 local SCAN_TIME = 10
 local TELEPORT_WAIT = 8
 local SERVER_LIST_PLACE_ID = 133950099874787
@@ -230,7 +230,7 @@ local function buildAlertGui()
 	title.Position = UDim2.fromScale(0.05, 0.05)
 	title.Size = UDim2.fromScale(0.9, 0.4)
 	title.Font = Enum.Font.GothamBlack
-	title.Text = "ZICARNITE FOUND!"
+	title.Text = "ZICARDITE FOUND!"
 	title.TextColor3 = Color3.fromRGB(255, 220, 0)
 	title.TextScaled = true
 	title.Parent = panel
@@ -351,7 +351,7 @@ local function triggerAlert(node)
 		alertDetails.Text = nameList .. "\nServer hop STOPPED\nJobId: " .. game.JobId
 	end
 
-	notify("ZICARNITE FOUND!", nameList .. " - server hop stopped", 60)
+	notify("ZICARDITE FOUND!", nameList .. " - server hop stopped", 60)
 
 	if setclipboard then
 		pcall(setclipboard, rejoin)
@@ -363,22 +363,22 @@ local function triggerAlert(node)
 	if not state.Pinging then
 		state.Pinging = true
 		task.spawn(function()
-			postWebhook("**ZICARNITE FOUND** (" .. nameList .. ")\n```lua\n" .. rejoin .. "\n```", true)
+			postWebhook("**ZICARDITE FOUND** (" .. nameList .. ")\n```lua\n" .. rejoin .. "\n```", true)
 			for index = 2, ZIC_PINGS do
 				task.wait(2)
-				postWebhook("**ZICARNITE FOUND** " .. index .. "/" .. ZIC_PINGS .. " - JobId `" .. game.JobId .. "`", true)
+				postWebhook("**ZICARDITE FOUND** " .. index .. "/" .. ZIC_PINGS .. " - JobId `" .. game.JobId .. "`", true)
 			end
 			while alertGui do
 				task.wait(60)
 				if alertGui then
-					postWebhook("**ZICARNITE STILL HERE** - JobId `" .. game.JobId .. "`", true)
+					postWebhook("**ZICARDITE STILL HERE** - JobId `" .. game.JobId .. "`", true)
 				end
 			end
 		end)
 	end
 
 	if messagebox then
-		task.spawn(pcall, messagebox, "ZICARNITE FOUND: " .. nameList, "Zicarnite Hunter", 0x30)
+		task.spawn(pcall, messagebox, "ZICARDITE FOUND: " .. nameList, "Zicardite Hunter", 0x30)
 	end
 end
 
@@ -466,7 +466,7 @@ local function hubHop(pickServer, serverFolders)
 		end)
 		visited.Hops = visited.Hops + 1
 		saveVisited(visited)
-		notify("Zicarnite Hunter", "Joining server #" .. visited.Hops .. " (" .. #pool .. " unvisited)", 3)
+		notify("Zicardite Hunter", "Joining server #" .. visited.Hops .. " (" .. #pool .. " unvisited)", 3)
 
 		local success, joined = pcall(function()
 			if id then
@@ -559,16 +559,16 @@ local function teleportToHub()
 	local button = findServerListButton()
 	local method = serverListAttempts % 3
 	if not button then
-		notify("Zicarnite Hunter", "Server List button not found, teleporting", 3)
+		notify("Zicardite Hunter", "Server List button not found, teleporting", 3)
 		method = 0
 	end
 	if method == 1 and not state.Found and fireConnections(button) then
-		notify("Zicarnite Hunter", "Clicking Server List...", 3)
+		notify("Zicardite Hunter", "Clicking Server List...", 3)
 	elseif method ~= 0 and not state.Found then
-		notify("Zicarnite Hunter", "Clicking Server List (mouse)...", 3)
+		notify("Zicardite Hunter", "Clicking Server List (mouse)...", 3)
 		mouseClick(button)
 	else
-		notify("Zicarnite Hunter", "Opening server list...", 3)
+		notify("Zicardite Hunter", "Opening server list...", 3)
 		pcall(function()
 			if state.Found then
 				return
@@ -610,10 +610,10 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		return
 	end
 	state.Paused = not state.Paused
-	notify("Zicarnite Hunter", state.Paused and "Server hop PAUSED" or "Server hop RESUMED", 4)
+	notify("Zicardite Hunter", state.Paused and "Server hop PAUSED" or "Server hop RESUMED", 4)
 end)
 
-notify("Zicarnite Hunter", "Scanning OreNodes... (Right Ctrl = pause)", 4)
+notify("Zicardite Hunter", "Scanning OreNodes... (Right Ctrl = pause)", 4)
 
 local inServerList = game:GetService("ReplicatedStorage"):FindFirstChild("PickServer") ~= nil
 local oreNodes = workspace:WaitForChild("OreNodes", inServerList and 3 or 25)
