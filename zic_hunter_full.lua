@@ -327,6 +327,67 @@ local function markNode(node)
 	end)
 end
 
+local serverInfoCache
+
+local function getServerInfo()
+	if serverInfoCache then
+		return serverInfoCache[1], serverInfoCache[2]
+	end
+	local serverName, labelFound, regionName
+	local deadline = os.clock() + 6
+	repeat
+		local playerGui = localPlayer:FindFirstChild("PlayerGui")
+		local label = playerGui and playerGui:FindFirstChild("ServerAame", true)
+		if label then
+			labelFound = true
+			pcall(function()
+				serverName = label.ContentText ~= "" and label.ContentText or label.Text
+			end)
+			pcall(function()
+				for _, other in ipairs(label.Parent:GetDescendants()) do
+					if other:IsA("TextLabel") and string.find(string.lower(other.Name), "region", 1, true) and other.ContentText ~= "" then
+						regionName = other.ContentText
+						break
+					end
+				end
+			end)
+		end
+		if serverName and serverName ~= "" then
+			break
+		end
+		task.wait(0.25)
+	until os.clock() > deadline
+	pcall(function()
+		local last = HttpService:JSONDecode(readfile(LAST_SERVER_FILE))
+		if os.time() - (tonumber(last.Time) or 0) < 300 then
+			if (not serverName or serverName == "") and type(last.Name) == "string" and last.Name ~= "" then
+				serverName = last.Name
+			end
+			if not regionName and type(last.Region) == "string" and last.Region ~= "" then
+				regionName = last.Region
+			end
+		end
+	end)
+	if not serverName or serverName == "" then
+		serverName = labelFound and "Unknown (label empty)" or "Unknown (label not found)"
+	end
+	regionName = regionName or "Unknown"
+	serverInfoCache = { serverName, regionName }
+	return serverName, regionName
+end
+
+local function findDetails()
+	local serverName, regionName = getServerInfo()
+	return string.format(
+		"SERVER NAME: **%s**\nREGION: **%s**\nACCOUNT: **%s** (%s)\nJobId: `%s`",
+		serverName,
+		regionName,
+		localPlayer.Name,
+		localPlayer.DisplayName,
+		game.JobId
+	)
+end
+
 local function triggerAlert(node)
 	if state.FoundNodes[node] then
 		return
@@ -363,15 +424,16 @@ local function triggerAlert(node)
 	if not state.Pinging then
 		state.Pinging = true
 		task.spawn(function()
-			postWebhook("**ZICARDITE FOUND** (" .. nameList .. ")\n```lua\n" .. rejoin .. "\n```", true)
+			local details = findDetails()
+			postWebhook("**ZICARDITE FOUND** (" .. nameList .. ")\n" .. details .. "\n```lua\n" .. rejoin .. "\n```", true)
 			for index = 2, ZIC_PINGS do
 				task.wait(2)
-				postWebhook("**ZICARDITE FOUND** " .. index .. "/" .. ZIC_PINGS .. " - JobId `" .. game.JobId .. "`", true)
+				postWebhook("**ZICARDITE FOUND** " .. index .. "/" .. ZIC_PINGS .. "\n" .. details, true)
 			end
 			while alertGui do
 				task.wait(60)
 				if alertGui then
-					postWebhook("**ZICARDITE STILL HERE** - JobId `" .. game.JobId .. "`", true)
+					postWebhook("**ZICARDITE STILL HERE**\n" .. details, true)
 				end
 			end
 		end)
@@ -672,44 +734,7 @@ if oreNodes then
 		table.sort(order)
 		local lines = { "Joined server: `" .. game.JobId .. "`" }
 		if SHOW_SERVER_NAME then
-			local serverName, labelFound, regionName
-			local deadline = os.clock() + 6
-			repeat
-				local playerGui = localPlayer:FindFirstChild("PlayerGui")
-				local label = playerGui and playerGui:FindFirstChild("ServerAame", true)
-				if label then
-					labelFound = true
-					pcall(function()
-						serverName = label.ContentText ~= "" and label.ContentText or label.Text
-					end)
-					pcall(function()
-						for _, other in ipairs(label.Parent:GetDescendants()) do
-							if other:IsA("TextLabel") and string.find(string.lower(other.Name), "region", 1, true) and other.ContentText ~= "" then
-								regionName = other.ContentText
-								break
-							end
-						end
-					end)
-				end
-				if serverName and serverName ~= "" then
-					break
-				end
-				task.wait(0.25)
-			until os.clock() > deadline
-			pcall(function()
-				local last = HttpService:JSONDecode(readfile(LAST_SERVER_FILE))
-				if os.time() - (tonumber(last.Time) or 0) < 300 then
-					if (not serverName or serverName == "") and type(last.Name) == "string" and last.Name ~= "" then
-						serverName = last.Name
-					end
-					if not regionName and type(last.Region) == "string" and last.Region ~= "" then
-						regionName = last.Region
-					end
-				end
-			end)
-			if not serverName or serverName == "" then
-				serverName = labelFound and "Unknown (label empty)" or "Unknown (label not found)"
-			end
+			local serverName, regionName = getServerInfo()
 			table.insert(lines, "SERVER NAME: **" .. serverName .. "**")
 			table.insert(lines, "REGION: **" .. (regionName or "Unknown") .. "**")
 		end
