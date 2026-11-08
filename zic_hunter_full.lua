@@ -52,6 +52,9 @@ local httpRequest = firstFunction(request, http_request, field(syn, "request"), 
 if WEBHOOK_URL == "" and type(globalEnvironment.ZicWebhook) == "string" then
 	WEBHOOK_URL = globalEnvironment.ZicWebhook
 end
+if type(globalEnvironment.ZicPingId) == "string" and string.match(globalEnvironment.ZicPingId, "^%d+$") then
+	DISCORD_USER_ID = globalEnvironment.ZicPingId
+end
 
 local function postWebhook(content, ping)
 	if WEBHOOK_URL == "" or not httpRequest then
